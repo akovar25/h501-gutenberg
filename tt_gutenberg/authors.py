@@ -1,23 +1,21 @@
 # authors.py
 
-from tt_gutenberg.utils import load_gutenberg_data, clean_authors
+from .utils import load_data, count_translations_by_author
 
 def list_authors(by_languages=True, alias=True):
     """
-    Return a list of author aliases sorted by translation count.
-    Only includes valid aliases.
+    List author aliases ordered by translation count.
+
+    Parameters:
+        by_languages: bool -> currently must be True (translation count)
+        alias: bool -> use alias column instead of author name
+
+    Returns:
+        List of author aliases
     """
-    authors, languages, metadata, subjects = load_gutenberg_data()
-    authors = clean_authors(authors)
-
-    if by_languages and alias:
-        # Merge authors with languages on gutenberg_author_id
-        merged = authors.merge(languages, on="gutenberg_author_id", how="inner")
-
-        # Count number of translations per alias
-        translation_counts = merged.groupby("alias")["language"].count()
-
-        # Sort descending and return list of aliases
-        return translation_counts.sort_values(ascending=False).index.tolist()
-
-    return []
+    authors, metadata, languages = load_data()
+    if by_languages:
+        counts = count_translations_by_author(authors, metadata, languages, alias=alias)
+        return counts["alias" if alias else "name"].tolist()
+    else:
+        raise NotImplementedError("Only by_languages=True is supported right now.")
