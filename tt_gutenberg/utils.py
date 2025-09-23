@@ -10,20 +10,16 @@ def load_data():
     Returns:
     A three different DataFrames containing authors, metadata, language data.
     """
-    
     # Load Author data from GitHub repository
-    
     authors = pd.read_csv(
         "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-03/gutenberg_authors.csv"
     )
     # Load Metadata data from GitHub repository
-
     metadata = pd.read_csv(
         "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-03/gutenberg_metadata.csv"
     )
     
     # Load Language data from GitHub repository
-
     languages = pd.read_csv(
         "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-03/gutenberg_languages.csv"
     )
