@@ -1,22 +1,62 @@
 import pandas as pd
-from .data import load_authors, load_languages, load_metadata
 
-def count_translations_by_author():
-    authors = load_authors()
-    languages = load_languages()
-    metadata = load_metadata()
+def load_data():
+    """
+    This function loads the data from a GitHub repository.
+    
+    Arguments:
+        None
 
-    # Merge metadata -> languages (by gutenberg_id)
-    merged = metadata.merge(languages, on="gutenberg_id", how="inner")
+    Returns:
+        pandas DataFrame containing authors, metadata, language data
+    """
+    authors = pd.read_csv(
+        "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-03/gutenberg_authors.csv"
+    )
+    metadata = pd.read_csv(
+        "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-03/gutenberg_metadata.csv"
+    )
+    languages = pd.read_csv(
+        "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-03/gutenberg_languages.csv"
+    )
+    return authors, metadata, languages
 
-    # Count distinct languages per gutenberg_author_id
+def count_translations_by_author(authors, metadata, languages, alias=True):
+    """
+    Count number of translations per author.
+
+    Arguments:
+        authors: dataframe
+        metadata: dataframe
+        languages: dataframe
+        alias: bool -> use author alias column if True, else use author name
+
+    Returns:
+        DataFrame with author + translation count
+    """
+    # merge metadata with languages
+    meta_lang = metadata.merge(languages, on="gutenberg_id", how="left")
+
+    # count number of unique languages per book
     lang_counts = (
-        merged.groupby("gutenberg_author_id")["language"]
+        meta_lang.groupby("gutenberg_id")["language_y"]
         .nunique()
-        .reset_index(name="translation_count")
+        .reset_index(name="num_languages")
     )
 
-    # Merge back to authors
-    authors_counts = authors.merge(lang_counts, on="gutenberg_author_id", how="inner")
+    # attach to authors
+    merged = metadata.merge(authors, left_on="gutenberg_author_id", right_on="gutenberg_author_id", how="left") \
+                 .merge(lang_counts, on="gutenberg_id", how="left")
 
-    return authors_counts
+    # translations = languages - 1 (ignore original)
+    merged["translations"] = merged["num_languages"].fillna(1) - 1
+
+    group_col = "alias" if alias else "name"
+    out = (
+        merged.groupby(group_col)["translations"]
+        .sum()
+        .reset_index()
+        .sort_values("translations", ascending=False)
+    )
+
+    return out
